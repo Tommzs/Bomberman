@@ -31,6 +31,7 @@ class Explosion:
 
         for i in self.sectors:
             map[i[0]][i[1]] = 0
+        self.sectors.clear
 
     def update(self, dt):
 
