@@ -1,11 +1,11 @@
 class Bomb:
     frame = 0
 
-    def __init__(self, r, x, y, map, bomber):
+    def __init__(self, r, x, y, map, bomber, time):
         self.range = r
         self.posX = x
         self.posY = y
-        self.time = 3000
+        self.time = time
         self.bomber = bomber
         self.sectors = []
         self.get_range(map)

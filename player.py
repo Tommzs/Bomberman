@@ -5,7 +5,7 @@ from bomb import Bomb
 from controls import Controls
 
 class Player:
-    def __init__(self, pos, controls):
+    def __init__(self, pos, controls, name):
         self.posX = pos[0] * 4
         self.posY = pos[1] * 4
         self.direction = 0
@@ -15,6 +15,7 @@ class Player:
         self.bomb_limit = 1
         self.life = True
         self.controls = controls
+        self.name = name
 
     def move(self, dx, dy, grid, enemys):
         tempx = int(self.posX/4)
@@ -68,8 +69,8 @@ class Player:
             if map[tempx][tempy-1] == 0:
                 self.posY -= 1
 
-    def plant_bomb(self, map):
-        b = Bomb(self.bomb_range, round(self.posX/4), round(self.posY/4), map, self)
+    def plant_bomb(self, map, time):
+        b = Bomb(self.bomb_range, round(self.posX/4), round(self.posY/4), map, self, time)
         return b
 
     def check_death(self, exp):

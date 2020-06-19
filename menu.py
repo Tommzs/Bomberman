@@ -70,9 +70,9 @@ def menu_loop():
         width=int(WINDOW_SIZE[0] * 0.7),
         title='Options'
     )
-    play_options.add_selector("Character 1", [("Player", Algorithm.PLAYER, 0), ("DFS", Algorithm.DFS, 0),
+    play_options.add_selector("Character 1", [("Player 1", Algorithm.PLAYER, 0), ("DFS", Algorithm.DFS, 0),
                                               ("DIJKSTRA", Algorithm.DIJKSTRA, 0), ("None", Algorithm.NONE, 0)], onchange=change_player)
-    play_options.add_selector("Character 2", [("Player", Algorithm.PLAYER, 1), ("DFS", Algorithm.DFS, 1),
+    play_options.add_selector("Character 2", [("Player 2", Algorithm.PLAYER, 1), ("DFS", Algorithm.DFS, 1),
                                               ("DIJKSTRA", Algorithm.DIJKSTRA, 1), ("None", Algorithm.NONE, 1)], onchange=change_player)
     play_options.add_selector("Character 3", [("DFS", Algorithm.DIJKSTRA, 2),
                                               ("DIJKSTRA", Algorithm.DFS, 2), ("None", Algorithm.NONE, 2)], onchange=change_player)

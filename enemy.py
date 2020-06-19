@@ -49,13 +49,13 @@ class Enemy:
         else:
             self.frame += 1
 
-    def make_move(self, map, bombs, explosions, enemy):
+    def make_move(self, map, bombs, explosions, enemy, bomb_time):
 
         if not self.life:
             return
         if len(self.movement_path) == 0:
             if self.plant:
-                bombs.append(self.plant_bomb(map))
+                bombs.append(self.plant_bomb(map, bomb_time))
                 self.plant = False
                 map[int(self.posX / 4)][int(self.posY / 4)] = 3
             if self.algorithm is Algorithm.DFS:
@@ -67,8 +67,8 @@ class Enemy:
             self.direction = self.movement_path[0]
             self.move(map, bombs, explosions, enemy)
 
-    def plant_bomb(self, map):
-        b = Bomb(self.range, round(self.posX / 4), round(self.posY / 4), map, self)
+    def plant_bomb(self, map, time):
+        b = Bomb(self.range, round(self.posX / 4), round(self.posY / 4), map, self, time)
         self.bomb_limit -= 1
         return b
 
