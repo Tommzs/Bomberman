@@ -2,18 +2,19 @@ import pygame
 import math
 
 from bomb import Bomb
+from controls import Controls
 
 class Player:
-    posX = 4
-    posY = 4
-    direction = 0
-    frame = 0
-    animation = []
-    range = 3
-    bomb_limit = 1
-
-    def __init__(self):
+    def __init__(self, pos, controls):
+        self.posX = pos[0] * 4
+        self.posY = pos[1] * 4
+        self.direction = 0
+        self.frame = 0
+        self.animation = []
+        self.bomb_range = 3
+        self.bomb_limit = 1
         self.life = True
+        self.controls = controls
 
     def move(self, dx, dy, grid, enemys):
         tempx = int(self.posX/4)
@@ -68,7 +69,7 @@ class Player:
                 self.posY -= 1
 
     def plant_bomb(self, map):
-        b = Bomb(self.range, round(self.posX/4), round(self.posY/4), map, self)
+        b = Bomb(self.bomb_range, round(self.posX/4), round(self.posY/4), map, self)
         return b
 
     def check_death(self, exp):

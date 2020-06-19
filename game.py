@@ -6,6 +6,7 @@ from player import Player
 from explosion import Explosion
 from enemy import Enemy
 from algorithm import Algorithm
+from controls import Controls
 
 TILE_WIDTH = 40
 TILE_HEIGHT = 40
@@ -21,11 +22,17 @@ show_path = True
 
 clock = None
 
-player = None
+players = []
 enemy_list = []
 ene_blocks = []
 bombs = []
 explosions = []
+
+player_controls = [
+    Controls(pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RCTRL),
+    Controls(pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_LCTRL)
+]
+
 
 grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -62,7 +69,7 @@ TEXT_LOSE = font.render('GAME OVER', False, (0, 0, 0))
 TEXT_WIN = font.render('WIN', False, (0, 0, 0))
 
 
-def game_init(path, player_alg, en1_alg, en2_alg, en3_alg, scale):
+def game_init(path, players_alg, scale):
 
     global TILE_WIDTH
     global TILE_HEIGHT
@@ -84,7 +91,7 @@ def game_init(path, player_alg, en1_alg, en2_alg, en3_alg, scale):
 
     global enemy_list
     global ene_blocks
-    global player
+    global players
 
     enemy_list = []
     ene_blocks = []
@@ -93,37 +100,18 @@ def game_init(path, player_alg, en1_alg, en2_alg, en3_alg, scale):
     bombs.clear()
     explosions.clear()
 
-    player = Player()
+    player_pos = [[1, 1], [11, 11], [1, 11], [11, 1]]
 
-    if en1_alg is not Algorithm.NONE:
-        en1 = Enemy(11, 11, en1_alg)
-        en1.load_animations('1', scale)
-        enemy_list.append(en1)
-        ene_blocks.append(en1)
-
-    if en2_alg is not Algorithm.NONE:
-        en2 = Enemy(1, 11, en2_alg)
-        en2.load_animations('2', scale)
-        enemy_list.append(en2)
-        ene_blocks.append(en2)
-
-    if en3_alg is not Algorithm.NONE:
-        en3 = Enemy(11, 1, en3_alg)
-        en3.load_animations('3', scale)
-        enemy_list.append(en3)
-        ene_blocks.append(en3)
-
-    if player_alg is Algorithm.PLAYER:
-        player.load_animations(scale)
-        ene_blocks.append(player)
-    elif player_alg is not Algorithm.NONE:
-        en0 = Enemy(1, 1, player_alg)
-        en0.load_animations('', scale)
-        enemy_list.append(en0)
-        ene_blocks.append(en0)
-        player.life = False
-    else:
-        player.life = False
+    for i, alg in enumerate(players_alg):
+        if alg is Algorithm.PLAYER:
+            players.append(Player(player_pos[i], player_controls[i]))
+            players[-1].load_animations(scale)
+            ene_blocks.append(players[-1])
+        elif alg is not Algorithm.NONE:
+            en1 = Enemy(player_pos[i], alg)
+            en1.load_animations('1', scale)
+            enemy_list.append(en1)
+            ene_blocks.append(en1)
 
     global grass_img
     grass_img = pygame.image.load('images/terrain/grass.png')
@@ -174,9 +162,10 @@ def draw():
     for y in explosions:
         for x in y.sectors:
             s.blit(explosion_images[y.frame], (x[0] * TILE_WIDTH, x[1] * TILE_HEIGHT, TILE_HEIGHT, TILE_WIDTH))
-    if player.life:
-        s.blit(player.animation[player.direction][player.frame],
-               (player.posX * (TILE_WIDTH / 4), player.posY * (TILE_HEIGHT / 4), TILE_WIDTH, TILE_HEIGHT))
+    for player in players:
+        if player.life:
+            s.blit(player.animation[player.direction][player.frame],
+                (player.posX * (TILE_WIDTH / 4), player.posY * (TILE_HEIGHT / 4), TILE_WIDTH, TILE_HEIGHT))
     for en in enemy_list:
         if en.life:
             s.blit(en.animation[en.direction][en.frame],
@@ -206,52 +195,67 @@ def generate_map():
     return
 
 
+def is_alive():
+    for player in players:
+        if player.life:
+            return True
+    return False
+
+
 def main():
     generate_map()
-    while player.life:
+    while is_alive():
         dt = clock.tick(15)
         for en in enemy_list:
             en.make_move(grid, bombs, explosions, ene_blocks)
+
         keys = pygame.key.get_pressed()
-        temp = player.direction
-        movement = False
-        if keys[pygame.K_DOWN]:
-            temp = 0
-            player.move(0, 1, grid, ene_blocks)
-            movement = True
-        elif keys[pygame.K_RIGHT]:
-            temp = 1
-            player.move(1, 0, grid, ene_blocks)
-            movement = True
-        elif keys[pygame.K_UP]:
-            temp = 2
-            player.move(0, -1, grid, ene_blocks)
-            movement = True
-        elif keys[pygame.K_LEFT]:
-            temp = 3
-            player.move(-1, 0, grid, ene_blocks)
-            movement = True
-        if temp != player.direction:
-            player.frame = 0
-            player.direction = temp
-        if movement:
-            if player.frame == 2:
+        new_directions = [player.direction for player in players]
+        movements = [False for player in players]
+
+        for new_direction, movement, player in zip(new_directions, movements, players):
+            if not player.life:
+                continue
+            if keys[player.controls.down]:
+                new_direction = 0
+                player.move(0, 1, grid, ene_blocks)
+                movement = True
+            elif keys[player.controls.right]:
+                new_direction = 1
+                player.move(1, 0, grid, ene_blocks)
+                movement = True
+            elif keys[player.controls.up]:
+                new_direction = 2
+                player.move(0, -1, grid, ene_blocks)
+                movement = True
+            elif keys[player.controls.left]:
+                new_direction = 3
+                player.move(-1, 0, grid, ene_blocks)
+                movement = True
+            if new_direction != player.direction:
                 player.frame = 0
-            else:
-                player.frame += 1
+                player.direction = new_direction
+            if movement:
+                if player.frame == 2:
+                    player.frame = 0
+                else:
+                    player.frame += 1
 
         draw()
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 sys.exit(0)
             elif e.type == pygame.KEYDOWN:
-                if e.key == pygame.K_SPACE:
-                    if player.bomb_limit == 0:
+                for player in players:
+                    if not player.life:
                         continue
-                    temp_bomb = player.plant_bomb(grid)
-                    bombs.append(temp_bomb)
-                    grid[temp_bomb.posX][temp_bomb.posY] = 3
-                    player.bomb_limit -= 1
+                    if e.key == player.controls.bomb:
+                        if player.bomb_limit == 0:
+                            continue
+                        temp_bomb = player.plant_bomb(grid)
+                        bombs.append(temp_bomb)
+                        grid[temp_bomb.posX][temp_bomb.posY] = 3
+                        player.bomb_limit -= 1
 
         update_bombs(dt)
     game_over()
@@ -267,8 +271,9 @@ def update_bombs(dt):
             exp_temp.explode(grid, bombs, b)
             exp_temp.clear_sectors(grid)
             explosions.append(exp_temp)
-    if player not in enemy_list:
-        player.check_death(explosions)
+    for player in players:
+        if player not in enemy_list:
+            player.check_death(explosions)
     for en in enemy_list:
         en.check_death(explosions)
     for e in explosions:

@@ -9,12 +9,12 @@ class Enemy:
 
     dire = [[1, 0, 1], [0, 1, 0], [-1, 0, 3], [0, -1, 2]]
 
-    def __init__(self, x, y, alg):
+    def __init__(self, pos, alg):
         self.life = True
         self.path = []
         self.movement_path = []
-        self.posX = x * 4
-        self.posY = y * 4
+        self.posX = pos[0] * 4
+        self.posY = pos[1] * 4
         self.direction = 0
         self.frame = 0
         self.animation = []
