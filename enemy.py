@@ -1,30 +1,21 @@
 import pygame
 import random
-from bomb import Bomb
 from node import Node
 from algorithm import Algorithm
+from character import Character
 
-
-class Enemy:
+class Enemy(Character):
 
     dire = [[1, 0, 1], [0, 1, 0], [-1, 0, 3], [0, -1, 2]]
 
     def __init__(self, pos, alg):
-        self.life = True
+        Character.__init__(self, pos)
         self.path = []
         self.movement_path = []
-        self.posX = pos[0] * 4
-        self.posY = pos[1] * 4
-        self.direction = 0
-        self.frame = 0
-        self.animation = []
-        self.range = 3
-        self.bomb_limit = 1
         self.plant = False
         self.algorithm = alg
 
     def move(self, map, bombs, explosions, enemy):
-
         if self.direction == 0:
             self.posY += 1
         elif self.direction == 1:
@@ -49,38 +40,22 @@ class Enemy:
         else:
             self.frame += 1
 
-    def make_move(self, map, bombs, explosions, enemy, bomb_time):
+    def make_move(self, map, bombs, explosions, enemy, bomb_time, bonuses):
 
         if not self.life:
             return
         if len(self.movement_path) == 0:
             if self.plant:
-                bombs.append(self.plant_bomb(map, bomb_time))
+                self.plant_bomb(map, bomb_time, bombs)
                 self.plant = False
-                map[int(self.posX / 4)][int(self.posY / 4)] = 3
             if self.algorithm is Algorithm.DFS:
                 self.dfs(self.create_grid(map, bombs, explosions, enemy))
             else:
-                self.dijkstra(self.create_grid_dijkstra(map, bombs, explosions, enemy))
+                self.dijkstra(self.create_grid_dijkstra(map, bombs, explosions, enemy, bonuses))
 
         else:
             self.direction = self.movement_path[0]
             self.move(map, bombs, explosions, enemy)
-
-    def plant_bomb(self, map, time):
-        b = Bomb(self.range, round(self.posX / 4), round(self.posY / 4), map, self, time)
-        self.bomb_limit -= 1
-        return b
-
-    def check_death(self, exp):
-
-        for e in exp:
-            for s in e.sectors:
-                if int(self.posX / 4) == s[0] and int(self.posY / 4) == s[1]:
-                    if e.bomber == self:
-                        print(str(self.algorithm.value) + " SUICIDE")
-                    self.life = False
-                    return
 
     def dfs(self, grid):
 
@@ -225,7 +200,6 @@ class Enemy:
         # 3 - unreachable
 
         for b in bombs:
-            b.get_range(map)
             for x in b.sectors:
                 grid[x[0]][x[1]] = 1
             grid[b.posX][b.posY] = 3
@@ -251,7 +225,7 @@ class Enemy:
 
         return grid
 
-    def create_grid_dijkstra(self, map, bombs, explosions, enemys):
+    def create_grid_dijkstra(self, map, bombs, explosions, enemys, bonuses):
         grid = [[None] * len(map) for r in range(len(map))]
 
         # 0 - safe
@@ -261,7 +235,7 @@ class Enemy:
         for i in range(len(map)):
             for j in range(len(map)):
                 if map[i][j] == 0:
-                    grid[i][j] = Node(i, j, True, 1, 0)
+                    grid[i][j] = Node(i, j, True, 2, 0)
                 elif map[i][j] == 2:
                     grid[i][j] = Node(i, j, False, 999, 1)
                 elif map[i][j] == 1:
@@ -270,7 +244,6 @@ class Enemy:
                     grid[i][j] = Node(i, j, False, 999, 2)
 
         for b in bombs:
-            b.get_range(map)
             for x in b.sectors:
                 grid[x[0]][x[1]].weight = 5
                 grid[x[0]][x[1]].value = 3
@@ -279,6 +252,9 @@ class Enemy:
         for e in explosions:
             for s in e.sectors:
                 grid[s[0]][s[1]].reach = False
+            
+        for bonus in bonuses:
+            grid[bonus.x][bonus.y].weight = 1
 
         for x in enemys:
             if x == self:

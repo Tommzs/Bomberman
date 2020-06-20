@@ -1,3 +1,6 @@
+from random import choice
+from bonus import Bonus
+
 class Explosion:
 
     bomber = None
@@ -27,11 +30,14 @@ class Explosion:
                     x.bomber.bomb_limit += 1
                     self.explode(map, bombs, x)
 
-    def clear_sectors(self, map):
+    def clear_sectors(self, map, bonuses):
 
         for i in self.sectors:
-            map[i[0]][i[1]] = 0
-        self.sectors.clear
+            if map[i[0]][i[1]] != 0:
+                map[i[0]][i[1]] = 0
+                rand_bonus = choice([0, 0, 0, 0, 0, 0, 1, 1, 2, 2])
+                if rand_bonus != 0:
+                    bonuses.append(Bonus(i[0], i[1], rand_bonus))
 
     def update(self, dt):
 

@@ -1,8 +1,8 @@
 import pygame
 import pygame_menu
-
 import game
 from algorithm import Algorithm
+from controls import Controls
 
 COLOR_BACKGROUND = (153, 153, 255)
 COLOR_BLACK = (0, 0, 0)
@@ -18,9 +18,41 @@ WINDOW_SIZE = (13 * TILE_SIZE, 13 * TILE_SIZE)
 
 clock = None
 players_alg = [Algorithm.PLAYER, Algorithm.PLAYER, Algorithm.DIJKSTRA, Algorithm.DFS]
-show_path = True
+show_path = False
 surface = pygame.display.set_mode(WINDOW_SIZE)
 
+control_list_select1 = [("Key1", 0)]
+control_list_select2 = [("Key2", 1)]
+pygame.joystick.init()
+num_of_gamepads = pygame.joystick.get_count()
+
+controllers = [
+    Controls(pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RCTRL),
+    Controls(pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_LCTRL)
+    ]
+
+for i in range(num_of_gamepads):
+    gamepad = pygame.joystick.Joystick(i)
+    gamepad.init()
+    controllers.append(gamepad)
+    if i%2 == 0:
+        control_list_select1.append((f"Joy{i+1}", i+2))
+    else:
+        control_list_select2.append((f"Joy{i+1}", i+2))
+
+player_controls = [
+    controllers[0],
+    controllers[1]
+]
+
+def change_controls_player(value, control_num, player_num):
+    player_controls[player_num] = controllers[control_num]
+
+def change_controls_player1(value, control_num):
+    change_controls_player(value, control_num, 0)
+
+def change_controls_player2(value, control_num):
+    change_controls_player(value, control_num, 1)
 
 def change_path(value, c):
     global show_path
@@ -32,7 +64,7 @@ def change_player(value, c, player_num):
     players_alg[player_num] = c
 
 def run_game():
-    game.game_init(show_path, players_alg, TILE_SIZE)
+    game.game_init(show_path, players_alg, TILE_SIZE, player_controls)
 
 
 def main_background():
@@ -70,17 +102,35 @@ def menu_loop():
         width=int(WINDOW_SIZE[0] * 0.7),
         title='Options'
     )
-    play_options.add_selector("Character 1", [("Player 1", Algorithm.PLAYER, 0), ("DFS", Algorithm.DFS, 0),
-                                              ("DIJKSTRA", Algorithm.DIJKSTRA, 0), ("None", Algorithm.NONE, 0)], onchange=change_player)
-    play_options.add_selector("Character 2", [("Player 2", Algorithm.PLAYER, 1), ("DFS", Algorithm.DFS, 1),
-                                              ("DIJKSTRA", Algorithm.DIJKSTRA, 1), ("None", Algorithm.NONE, 1)], onchange=change_player)
-    play_options.add_selector("Character 3", [("DFS", Algorithm.DIJKSTRA, 2),
-                                              ("DIJKSTRA", Algorithm.DFS, 2), ("None", Algorithm.NONE, 2)], onchange=change_player)
-    play_options.add_selector("Character 3", [("DFS", Algorithm.DFS, 3),
-                                              ("DIJKSTRA", Algorithm.DIJKSTRA, 3), ("None", Algorithm.NONE, 3)], onchange=change_player)
-    play_options.add_selector("Show path", [("Yes", True), ("No", False)], onchange=change_path)
-
+    player_options = pygame_menu.Menu(theme=menu_theme,
+        height=int(WINDOW_SIZE[1] * 0.7),
+        width=int(WINDOW_SIZE[0] * 0.7),
+        title='Options'
+    )
+    control_options = pygame_menu.Menu(theme=menu_theme,
+        height=int(WINDOW_SIZE[1] * 0.7),
+        width=int(WINDOW_SIZE[0] * 0.7),
+        title='Options'
+    )
+    play_options.add_button('Characters', player_options)
+    play_options.add_button('Controls', control_options)
     play_options.add_button('Back', pygame_menu.events.BACK)
+
+    player_options.add_selector("Character 1", [("Player 1", Algorithm.PLAYER, 0), ("DFS", Algorithm.DFS, 0),
+                                              ("DIJKSTRA", Algorithm.DIJKSTRA, 0), ("None", Algorithm.NONE, 0)], onchange=change_player)
+    player_options.add_selector("Character 2", [("Player 2", Algorithm.PLAYER, 1), ("DFS", Algorithm.DFS, 1),
+                                              ("DIJKSTRA", Algorithm.DIJKSTRA, 1), ("None", Algorithm.NONE, 1)], onchange=change_player)
+    player_options.add_selector("Character 3", [("DFS", Algorithm.DIJKSTRA, 2),
+                                              ("DIJKSTRA", Algorithm.DFS, 2), ("None", Algorithm.NONE, 2)], onchange=change_player)
+    player_options.add_selector("Character 3", [("DFS", Algorithm.DFS, 3),
+                                              ("DIJKSTRA", Algorithm.DIJKSTRA, 3), ("None", Algorithm.NONE, 3)], onchange=change_player)
+    player_options.add_selector("Show path", [("Yes", True), ("No", False)], onchange=change_path)
+    player_options.add_button('Back', pygame_menu.events.BACK)
+
+    control_options.add_selector("Player 1", control_list_select1, onchange=change_controls_player1)
+    control_options.add_selector("Player 2", control_list_select2, onchange=change_controls_player2)
+    control_options.add_button('Back', pygame_menu.events.BACK)
+
     play_menu.add_button('Start',
                          run_game)
 

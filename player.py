@@ -1,21 +1,39 @@
 import pygame
 import math
 
-from bomb import Bomb
 from controls import Controls
+from character import Character
 
-class Player:
+class Player(Character):
     def __init__(self, pos, controls, name):
-        self.posX = pos[0] * 4
-        self.posY = pos[1] * 4
-        self.direction = 0
-        self.frame = 0
-        self.animation = []
-        self.bomb_range = 3
-        self.bomb_limit = 1
-        self.life = True
+        Character.__init__(self, pos)
         self.controls = controls
         self.name = name
+        self.moving = False
+
+    def stop(self):
+        self.moving = False
+    
+    def change_direction(self, direction):
+        self.direction = direction
+        self.frame = 0
+        self.moving = True
+
+    def step(self, new_direction, grid, ene_blocks):
+        if new_direction != self.direction:
+            self.change_direction(new_direction)
+        if self.direction == 0:
+            self.move(0, 1, grid, ene_blocks)
+            self.next_frame()
+        elif self.direction == 1:
+            self.move(1, 0, grid, ene_blocks)
+            self.next_frame()
+        elif self.direction == 2:
+            self.move(0, -1, grid, ene_blocks)
+            self.next_frame()
+        elif self.direction == 3:
+            self.move(-1, 0, grid, ene_blocks)
+            self.next_frame()
 
     def move(self, dx, dy, grid, enemys):
         tempx = int(self.posX/4)
@@ -51,33 +69,23 @@ class Player:
 
         # right
         if dx == 1:
-            if map[tempx+1][tempy] == 0:
+            if map[tempx+1][tempy] in [0, 4]:
                 self.posX += 1
         # left
         elif dx == -1:
             tempx = math.ceil(self.posX / 4)
-            if map[tempx-1][tempy] == 0:
+            if map[tempx-1][tempy] in [0, 4]:
                 self.posX -= 1
 
         # bottom
         if dy == 1:
-            if map[tempx][tempy+1] == 0:
+            if map[tempx][tempy+1] in [0, 4]:
                 self.posY += 1
         # top
         elif dy == -1:
             tempy = math.ceil(self.posY / 4)
-            if map[tempx][tempy-1] == 0:
-                self.posY -= 1
-
-    def plant_bomb(self, map, time):
-        b = Bomb(self.bomb_range, round(self.posX/4), round(self.posY/4), map, self, time)
-        return b
-
-    def check_death(self, exp):
-        for e in exp:
-            for s in e.sectors:
-                if int(self.posX/4) == s[0] and int(self.posY/4) == s[1]:
-                    self.life = False
+            if map[tempx][tempy-1] in [0, 4]:
+                self.posY -= 1             
 
     def load_animations(self, scale):
         front = []
@@ -139,3 +147,9 @@ class Player:
         self.animation.append(right)
         self.animation.append(back)
         self.animation.append(left)
+
+    def next_frame(self):
+        if self.frame == 2:
+            self.frame = 0
+        else:
+            self.frame += 1

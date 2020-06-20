@@ -6,7 +6,6 @@ from player import Player
 from explosion import Explosion
 from enemy import Enemy
 from algorithm import Algorithm
-from controls import Controls
 
 TILE_WIDTH = 40
 TILE_HEIGHT = 40
@@ -21,17 +20,13 @@ show_path = True
 
 clock = None
 
+player_controls = []
 players = []
 enemy_list = []
 ene_blocks = []
 bombs = []
 explosions = []
-
-player_controls = [
-    Controls(pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RCTRL),
-    Controls(pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_LCTRL)
-]
-
+bonuses = []
 
 grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -61,6 +56,7 @@ explosion3_img = None
 terrain_images = []
 bomb_images = []
 explosion_images = []
+bonus_images = []
 
 pygame.font.init()
 font = pygame.font.SysFont('Bebas', 30)
@@ -68,7 +64,9 @@ TEXT_LOSE = font.render('GAME OVER', False, (0, 0, 0))
 TEXT_WIN = font.render('WIN', False, (0, 0, 0))
 
 
-def game_init(path, players_alg, scale):
+def game_init(path, players_alg, scale, controls):
+    global player_controls
+    player_controls = controls
 
     global TILE_WIDTH
     global TILE_HEIGHT
@@ -102,14 +100,16 @@ def game_init(path, players_alg, scale):
     ene_blocks = []
     global explosions
     global bombs
+    global bonuses
     bombs.clear()
     explosions.clear()
+    bonuses.clear()
 
     player_pos = [[1, 1], [11, 11], [1, 11], [11, 1]]
 
     for i, alg in enumerate(players_alg):
         if alg is Algorithm.PLAYER:
-            players.append(Player(player_pos[i], player_controls[i], f"Player {i}"))
+            players.append(Player(player_pos[i], player_controls[i], f"Player {i+1}"))
             players[-1].load_animations(scale)
             ene_blocks.append(players[-1])
         elif alg is not Algorithm.NONE:
@@ -127,6 +127,12 @@ def game_init(path, players_alg, scale):
     global box_img
     box_img = pygame.image.load('images/terrain/box.png')
     box_img = pygame.transform.scale(box_img, (TILE_WIDTH, TILE_HEIGHT))
+    global bonus_fire_img
+    bonus_fire_img = pygame.image.load('images/bonuses/fire.png')
+    bonus_fire_img = pygame.transform.scale(bonus_fire_img, (TILE_WIDTH, TILE_HEIGHT))
+    global bonus_bomb_img
+    bonus_bomb_img = pygame.image.load('images/bonuses/bomb.png')
+    bonus_bomb_img = pygame.transform.scale(bonus_bomb_img, (TILE_WIDTH, TILE_HEIGHT))
     global bomb1_img
     bomb1_img = pygame.image.load('images/bomb/1.png')
     bomb1_img = pygame.transform.scale(bomb1_img, (TILE_WIDTH, TILE_HEIGHT))
@@ -151,6 +157,8 @@ def game_init(path, players_alg, scale):
     bomb_images = [bomb1_img, bomb2_img, bomb3_img]
     global explosion_images
     explosion_images = [explosion1_img, explosion2_img, explosion3_img]
+    global bonus_images
+    bonus_images = [bonus_fire_img, bonus_bomb_img]
 
     main()
 
@@ -167,6 +175,10 @@ def draw():
     for y in explosions:
         for x in y.sectors:
             surf.blit(explosion_images[y.frame], (x[0] * TILE_WIDTH, x[1] * TILE_HEIGHT, TILE_HEIGHT, TILE_WIDTH))
+    
+    for bonus in bonuses:
+        surf.blit(bonus_images[bonus.type - 1], (bonus.x * TILE_WIDTH, bonus.y * TILE_HEIGHT, TILE_HEIGHT, TILE_WIDTH))
+
     for player in players:
         if player.life:
             surf.blit(player.animation[player.direction][player.frame],
@@ -227,58 +239,55 @@ def main():
     while not game_end_check() and not end_game:
         dt = clock.tick(game_speed)
         for en in enemy_list:
-            en.make_move(grid, bombs, explosions, ene_blocks, bomb_time)
+            en.make_move(grid, bombs, explosions, ene_blocks, bomb_time, bonuses)
 
         keys = pygame.key.get_pressed()
-        new_directions = [player.direction for player in players]
-        movements = [False for player in players]
+        events = pygame.event.get()
 
-        for new_direction, movement, player in zip(new_directions, movements, players):
+        for player in players:
             if not player.life:
                 continue
-            if keys[player.controls.down]:
-                new_direction = 0
-                player.move(0, 1, grid, ene_blocks)
-                movement = True
-            elif keys[player.controls.right]:
-                new_direction = 1
-                player.move(1, 0, grid, ene_blocks)
-                movement = True
-            elif keys[player.controls.up]:
-                new_direction = 2
-                player.move(0, -1, grid, ene_blocks)
-                movement = True
-            elif keys[player.controls.left]:
-                new_direction = 3
-                player.move(-1, 0, grid, ene_blocks)
-                movement = True
-            if new_direction != player.direction:
-                player.frame = 0
-                player.direction = new_direction
-            if movement:
-                if player.frame == 2:
-                    player.frame = 0
-                else:
-                    player.frame += 1
+            if not isinstance(player.controls, pygame.joystick.JoystickType):
+                if keys[player.controls.down]: #moving down
+                    player.step(0, grid, ene_blocks)
+                elif keys[player.controls.right]:#moving right
+                    player.step(1, grid, ene_blocks)
+                elif keys[player.controls.up]: #moving up
+                    player.step(2, grid, ene_blocks)
+                elif keys[player.controls.left]: #moving left
+                    player.step(3, grid, ene_blocks)
+                if keys[player.controls.bomb]: #planting bomb
+                    player.plant_bomb(grid, bomb_time, bombs)
+            else:
+                joy_id = player.controls.get_id()
+                if player.moving:
+                    player.step(grid, ene_blocks)
 
+                for e in events:
+                    if (e.type == pygame.JOYAXISMOTION) and (e.joy == joy_id):
+                        if e.value < 0: 
+                            if e.axis == 1:
+                                player.change_direction(2) #moving up
+                            elif e.axis == 0:
+                                player.change_direction(3) #moving left
+                        elif e.value > 0: 
+                            if e.axis == 1: #moving down
+                                player.change_direction(0)
+                            elif e.axis == 0: #moving right
+                                player.change_direction(1)
+                        else:
+                            player.stop()
+                    if (e.type == pygame.JOYBUTTONDOWN) and (e.joy == joy_id):
+                        if e.button == 2:
+                            player.plant_bomb(grid, bomb_time, bombs)
         draw()
-        for e in pygame.event.get():
+        for e in events:
             if e.type == pygame.QUIT:
                 sys.exit(0)
             elif e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_ESCAPE:
                     end_game = pause()
-                for player in players:
-                    if not player.life:
-                        continue
-                    if e.key == player.controls.bomb:
-                        if player.bomb_limit == 0:
-                            continue
-                        temp_bomb = player.plant_bomb(grid, bomb_time)
-                        bombs.append(temp_bomb)
-                        grid[temp_bomb.posX][temp_bomb.posY] = 3
-                        player.bomb_limit -= 1
-
+                        
         update_bombs(dt)
     game_over()
 
@@ -291,13 +300,15 @@ def update_bombs(dt):
             grid[b.posX][b.posY] = 0
             exp_temp = Explosion(b.posX, b.posY, b.range)
             exp_temp.explode(grid, bombs, b)
-            exp_temp.clear_sectors(grid)
+            exp_temp.clear_sectors(grid, bonuses)
             explosions.append(exp_temp)
     for player in players:
         if player not in enemy_list:
             player.check_death(explosions)
+            player.check_bonus(bonuses)
     for en in enemy_list:
         en.check_death(explosions)
+        en.check_bonus(bonuses)
     for e in explosions:
         e.update(dt)
         if e.time < 1:
@@ -312,7 +323,7 @@ def game_over():
         count = 0
         winner = ""
         for en in enemy_list:
-            en.make_move(grid, bombs, explosions, ene_blocks, bomb_time)
+            en.make_move(grid, bombs, explosions, ene_blocks, bomb_time, bonuses)
             if en.life:
                 count += 1
                 winner = en.algorithm.name
