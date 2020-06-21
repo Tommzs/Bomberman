@@ -12,9 +12,9 @@ class Character:
         self.bomb_range = 3
         self.bomb_limit = 1
 
-    def plant_bomb(self, map, time, bombs):
+    def plant_bomb(self, map, time, bombs, bonuses):
         if self.bomb_limit > 0:
-            bomb = Bomb(self.bomb_range, round(self.posX/4), round(self.posY/4), map, self, time)
+            bomb = Bomb(self.bomb_range, round(self.posX/4), round(self.posY/4), map, self, time, bonuses)
             self.bomb_limit -= 1
             bombs.append(bomb)
             map[bomb.posX][bomb.posY] = 3

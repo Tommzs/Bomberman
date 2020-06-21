@@ -257,7 +257,7 @@ def main():
                 elif keys[player.controls.left]: #moving left
                     player.step(3, grid, ene_blocks)
                 if keys[player.controls.bomb]: #planting bomb
-                    player.plant_bomb(grid, bomb_time, bombs)
+                    player.plant_bomb(grid, bomb_time, bombs, bonuses)
             else:
                 joy_id = player.controls.get_id()
                 if player.moving:
@@ -279,7 +279,7 @@ def main():
                             player.stop()
                     if (e.type == pygame.JOYBUTTONDOWN) and (e.joy == joy_id):
                         if e.button == 2:
-                            player.plant_bomb(grid, bomb_time, bombs)
+                            player.plant_bomb(grid, bomb_time, bombs, bonuses)
         draw()
         for e in events:
             if e.type == pygame.QUIT:

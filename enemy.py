@@ -46,7 +46,7 @@ class Enemy(Character):
             return
         if len(self.movement_path) == 0:
             if self.plant:
-                self.plant_bomb(map, bomb_time, bombs)
+                self.plant_bomb(map, bomb_time, bombs, bonuses)
                 self.plant = False
             if self.algorithm is Algorithm.DFS:
                 self.dfs(self.create_grid(map, bombs, explosions, enemy))

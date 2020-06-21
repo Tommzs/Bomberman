@@ -33,6 +33,10 @@ class Explosion:
     def clear_sectors(self, map, bonuses):
 
         for i in self.sectors:
+            for bonus in bonuses:
+                if (bonus.x == i[0]) and (bonus.y == i[1]):
+                    bonuses.remove(bonus)
+
             if map[i[0]][i[1]] != 0:
                 map[i[0]][i[1]] = 0
                 rand_bonus = choice([0, 0, 0, 0, 0, 0, 1, 1, 2, 2])
