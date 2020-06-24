@@ -10,15 +10,30 @@ class Character:
         self.frame = 0
         self.animation = []
         self.bomb_range = 3
-        self.bomb_limit = 1
+        self.bomb_limit = 5
 
     def plant_bomb(self, map, time, bombs, bonuses):
         if self.bomb_limit > 0:
             bomb_posX = round(self.posX/4)
             bomb_posY = round(self.posY/4)
+            # do not plant bomb on existing bomb
             for bomb in bombs:
                 if bomb.posX == bomb_posX and bomb.posY == bomb_posY:
                     return False
+            #prevent bomb being planted in front of character
+            if self.direction == 0:
+                if self.posY/(4*bomb_posY) < 1:
+                    return False
+            elif self.direction == 1:
+                if self.posX/(4*bomb_posX) < 1:
+                    return False
+            elif self.direction == 2:
+                if self.posY/(4*bomb_posY) > 1:
+                    return False
+            elif self.direction == 3:
+                if self.posX/(4*bomb_posX) > 1:
+                    return False
+
             bomb = Bomb(self.bomb_range, round(self.posX/4), round(self.posY/4), map, self, time, bonuses)
             self.bomb_limit -= 1
             bombs.append(bomb)
