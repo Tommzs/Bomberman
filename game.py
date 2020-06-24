@@ -2,394 +2,335 @@ import pygame
 import sys
 import random
 import time
+import cfg
 from player import Player
 from explosion import Explosion
 from enemy import Enemy
 from algorithm import Algorithm
 
-TILE_WIDTH = 40
-TILE_HEIGHT = 40
+class Game:
+    def __init__(self):
 
-WINDOW_WIDTH = 13 * TILE_WIDTH
-WINDOW_HEIGHT = 13 * TILE_HEIGHT
+        self.surf = None
+        self.show_path = True
 
-BACKGROUND = (107, 142, 35)
+        self.clock = None
 
-surf = None
-show_path = True
+        self.player_controls = []
+        self.players = []
+        self.enemy_list = []
+        self.ene_blocks = []
+        self.bombs = []
+        self.explosions = []
+        self.bonuses = []
+        self.grid = cfg.GRID
+        self.grass_img = None
+        self.block_img = None
+        self.box_img = None
+        self.bomb1_img = None
+        self.bomb2_img = None
+        self.bomb3_img = None
+        self.explosion1_img = None
+        self.explosion2_img = None
+        self.explosion3_img = None
+        self.terrain_images = []
+        self.bomb_images = []
+        self.explosion_images = []
+        self.bonus_images = []
 
-clock = None
+        pygame.font.init()
+        self.font = pygame.font.SysFont(cfg.FONT_TYPE, cfg.FONT_SIZE)
+        self.text_lose = self.font.render(cfg.TEXT_LOSE, False, (0, 0, 0))
+        self.text_win = self.font.render(cfg.TEXT_WIN, False, (0, 0, 0))
 
-player_controls = []
-players = []
-enemy_list = []
-ene_blocks = []
-bombs = []
-explosions = []
-bonuses = []
+    def game_init(self, path, players_alg, scale, controls):
+        self.player_controls = controls
 
-grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+        cfg.TILE_SIZE = scale
+        cfg.TILE_SIZE = scale
 
-grass_img = None
-block_img = None
-box_img = None
-bomb1_img = None
-bomb2_img = None
-bomb3_img = None
-explosion1_img = None
-explosion2_img = None
-explosion3_img = None
+        self.font = pygame.font.SysFont('Bebas', scale)
+        self.show_path = path
+        self.surf = pygame.display.set_mode((13 * cfg.TILE_SIZE, 13 * cfg.TILE_SIZE))
+        pygame.display.set_caption('Bomberman')
+        self.clock = pygame.time.Clock()
+        self.game_speed = cfg.GAME_SPEED
+        self.bomb_time = cfg.BOMB_TIME*cfg.GAME_SPEED/self.game_speed
 
+        self.enemy_list = []
+        self.ene_blocks = []
+        self.bombs.clear()
+        self.explosions.clear()
+        self.bonuses.clear()
 
-terrain_images = []
-bomb_images = []
-explosion_images = []
-bonus_images = []
+        player_pos = [[1, 1], [11, 11], [1, 11], [11, 1]]
 
-pygame.font.init()
-font = pygame.font.SysFont('Bebas', 30)
-TEXT_LOSE = font.render('GAME OVER', False, (0, 0, 0))
-TEXT_WIN = font.render('WIN', False, (0, 0, 0))
+        for i, alg in enumerate(players_alg):
+            if alg is Algorithm.PLAYER:
+                self.players.append(Player(player_pos[i], self.player_controls[i], f"Player {i+1}"))
+                self.players[-1].load_animations(scale)
+                self.ene_blocks.append(self.players[-1])
+            elif alg is not Algorithm.NONE:
+                en1 = Enemy(player_pos[i], alg)
+                en1.load_animations('1', scale)
+                self.enemy_list.append(en1)
+                self.ene_blocks.append(en1)
 
+        self.grass_img = pygame.image.load('images/terrain/grass.png')
+        self.grass_img = pygame.transform.scale(self.grass_img, (cfg.TILE_SIZE, cfg.TILE_SIZE))
+        self.block_img = pygame.image.load('images/terrain/block.png')
+        self.block_img = pygame.transform.scale(self.block_img, (cfg.TILE_SIZE, cfg.TILE_SIZE))
+        self.box_img = pygame.image.load('images/terrain/box.png')
+        self.box_img = pygame.transform.scale(self.box_img, (cfg.TILE_SIZE, cfg.TILE_SIZE))
+        self.bonus_fire_img = pygame.image.load('images/bonuses/fire.png')
+        self.bonus_fire_img = pygame.transform.scale(self.bonus_fire_img, (cfg.TILE_SIZE, cfg.TILE_SIZE))
+        self.bonus_bomb_img = pygame.image.load('images/bonuses/bomb.png')
+        self.bonus_bomb_img = pygame.transform.scale(self.bonus_bomb_img, (cfg.TILE_SIZE, cfg.TILE_SIZE))
+        self.bomb1_img = pygame.image.load('images/bomb/1.png')
+        self.bomb1_img = pygame.transform.scale(self.bomb1_img, (cfg.TILE_SIZE, cfg.TILE_SIZE))
+        self.bomb2_img = pygame.image.load('images/bomb/2.png')
+        self.bomb2_img = pygame.transform.scale(self.bomb2_img, (cfg.TILE_SIZE, cfg.TILE_SIZE))
+        self.bomb3_img = pygame.image.load('images/bomb/3.png')
+        self.bomb3_img = pygame.transform.scale(self.bomb3_img, (cfg.TILE_SIZE, cfg.TILE_SIZE))
+        self.explosion1_img = pygame.image.load('images/explosion/1.png')
+        self.explosion1_img = pygame.transform.scale(self.explosion1_img, (cfg.TILE_SIZE, cfg.TILE_SIZE))
+        self.explosion2_img = pygame.image.load('images/explosion/2.png')
+        self.explosion2_img = pygame.transform.scale(self.explosion2_img, (cfg.TILE_SIZE, cfg.TILE_SIZE))
+        self.explosion3_img = pygame.image.load('images/explosion/3.png')
+        self.explosion3_img = pygame.transform.scale(self.explosion3_img, (cfg.TILE_SIZE, cfg.TILE_SIZE))
+        self.terrain_images = [self.grass_img, self.block_img, self.box_img, self.grass_img]
+        self.bomb_images = [self.bomb1_img, self.bomb2_img, self.bomb3_img]
+        self.explosion_images = [self.explosion1_img, self.explosion2_img, self.explosion3_img]
+        self.bonus_images = [self.bonus_fire_img, self.bonus_bomb_img]
 
-def game_init(path, players_alg, scale, controls):
-    global player_controls
-    player_controls = controls
-
-    global TILE_WIDTH
-    global TILE_HEIGHT
-    TILE_WIDTH = scale
-    TILE_HEIGHT = scale
-
-    global font
-    font = pygame.font.SysFont('Bebas', scale)
-
-    global show_path
-    show_path = path
-
-    global surf
-    surf = pygame.display.set_mode((13 * TILE_WIDTH, 13 * TILE_HEIGHT))
-    pygame.display.set_caption('Bomberman')
-
-    global clock
-    clock = pygame.time.Clock()
-
-    global game_speed
-    game_speed = 15
-
-    global bomb_time
-    bomb_time = 3000*15/game_speed
-
-    global enemy_list
-    global ene_blocks
-    global players
-
-    enemy_list = []
-    ene_blocks = []
-    global explosions
-    global bombs
-    global bonuses
-    bombs.clear()
-    explosions.clear()
-    bonuses.clear()
-
-    player_pos = [[1, 1], [11, 11], [1, 11], [11, 1]]
-
-    for i, alg in enumerate(players_alg):
-        if alg is Algorithm.PLAYER:
-            players.append(Player(player_pos[i], player_controls[i], f"Player {i+1}"))
-            players[-1].load_animations(scale)
-            ene_blocks.append(players[-1])
-        elif alg is not Algorithm.NONE:
-            en1 = Enemy(player_pos[i], alg)
-            en1.load_animations('1', scale)
-            enemy_list.append(en1)
-            ene_blocks.append(en1)
-
-    global grass_img
-    grass_img = pygame.image.load('images/terrain/grass.png')
-    grass_img = pygame.transform.scale(grass_img, (TILE_WIDTH, TILE_HEIGHT))
-    global block_img
-    block_img = pygame.image.load('images/terrain/block.png')
-    block_img = pygame.transform.scale(block_img, (TILE_WIDTH, TILE_HEIGHT))
-    global box_img
-    box_img = pygame.image.load('images/terrain/box.png')
-    box_img = pygame.transform.scale(box_img, (TILE_WIDTH, TILE_HEIGHT))
-    global bonus_fire_img
-    bonus_fire_img = pygame.image.load('images/bonuses/fire.png')
-    bonus_fire_img = pygame.transform.scale(bonus_fire_img, (TILE_WIDTH, TILE_HEIGHT))
-    global bonus_bomb_img
-    bonus_bomb_img = pygame.image.load('images/bonuses/bomb.png')
-    bonus_bomb_img = pygame.transform.scale(bonus_bomb_img, (TILE_WIDTH, TILE_HEIGHT))
-    global bomb1_img
-    bomb1_img = pygame.image.load('images/bomb/1.png')
-    bomb1_img = pygame.transform.scale(bomb1_img, (TILE_WIDTH, TILE_HEIGHT))
-    global bomb2_img
-    bomb2_img = pygame.image.load('images/bomb/2.png')
-    bomb2_img = pygame.transform.scale(bomb2_img, (TILE_WIDTH, TILE_HEIGHT))
-    global bomb3_img
-    bomb3_img = pygame.image.load('images/bomb/3.png')
-    bomb3_img = pygame.transform.scale(bomb3_img, (TILE_WIDTH, TILE_HEIGHT))
-    global explosion1_img
-    explosion1_img = pygame.image.load('images/explosion/1.png')
-    explosion1_img = pygame.transform.scale(explosion1_img, (TILE_WIDTH, TILE_HEIGHT))
-    global explosion2_img
-    explosion2_img = pygame.image.load('images/explosion/2.png')
-    explosion2_img = pygame.transform.scale(explosion2_img, (TILE_WIDTH, TILE_HEIGHT))
-    global explosion3_img
-    explosion3_img = pygame.image.load('images/explosion/3.png')
-    explosion3_img = pygame.transform.scale(explosion3_img, (TILE_WIDTH, TILE_HEIGHT))
-    global terrain_images
-    terrain_images = [grass_img, block_img, box_img, grass_img]
-    global bomb_images
-    bomb_images = [bomb1_img, bomb2_img, bomb3_img]
-    global explosion_images
-    explosion_images = [explosion1_img, explosion2_img, explosion3_img]
-    global bonus_images
-    bonus_images = [bonus_fire_img, bonus_bomb_img]
-
-    main()
+        self.main()
 
 
-def draw():
-    surf.fill(BACKGROUND)
-    for i in range(len(grid)):
-        for j in range(len(grid[i])):
-            surf.blit(terrain_images[grid[i][j]], (i * TILE_WIDTH, j * TILE_HEIGHT, TILE_HEIGHT, TILE_WIDTH))
+    def draw(self):
+        self.surf.fill(cfg.GAME_BACKGROUND)
+        for i in range(len(self.grid)):
+            for j in range(len(self.grid[i])):
+                self.surf.blit(self.terrain_images[self.grid[i][j]], (i * cfg.TILE_SIZE, j * cfg.TILE_SIZE, cfg.TILE_SIZE, cfg.TILE_SIZE))
 
-    for x in bombs:
-        surf.blit(bomb_images[x.frame], (x.posX * TILE_WIDTH, x.posY * TILE_HEIGHT, TILE_HEIGHT, TILE_WIDTH))
+        for x in self.bombs:
+            self.surf.blit(self.bomb_images[x.frame], (x.posX * cfg.TILE_SIZE, x.posY * cfg.TILE_SIZE, cfg.TILE_SIZE, cfg.TILE_SIZE))
 
-    for y in explosions:
-        for x in y.sectors:
-            surf.blit(explosion_images[y.frame], (x[0] * TILE_WIDTH, x[1] * TILE_HEIGHT, TILE_HEIGHT, TILE_WIDTH))
-    
-    for bonus in bonuses:
-        surf.blit(bonus_images[bonus.type - 1], (bonus.x * TILE_WIDTH, bonus.y * TILE_HEIGHT, TILE_HEIGHT, TILE_WIDTH))
+        for y in self.explosions:
+            for x in y.sectors:
+                self.surf.blit(self.explosion_images[y.frame], (x[0] * cfg.TILE_SIZE, x[1] * cfg.TILE_SIZE, cfg.TILE_SIZE, cfg.TILE_SIZE))
+        
+        for bonus in self.bonuses:
+            self.surf.blit(self.bonus_images[bonus.type - 1], (bonus.x * cfg.TILE_SIZE, bonus.y * cfg.TILE_SIZE, cfg.TILE_SIZE, cfg.TILE_SIZE))
 
-    for player in players:
-        if player.life:
-            surf.blit(player.animation[player.direction][player.frame],
-                (player.posX * (TILE_WIDTH / 4), player.posY * (TILE_HEIGHT / 4), TILE_WIDTH, TILE_HEIGHT))
-    for en in enemy_list:
-        if en.life:
-            surf.blit(en.animation[en.direction][en.frame],
-                   (en.posX * (TILE_WIDTH / 4), en.posY * (TILE_HEIGHT / 4), TILE_WIDTH, TILE_HEIGHT))
-            if show_path:
-                if en.algorithm == Algorithm.DFS:
-                    for sek in en.path:
-                        pygame.draw.rect(surf, (255, 0, 0, 240), [sek[0] * TILE_WIDTH, sek[1] * TILE_HEIGHT, TILE_WIDTH, TILE_WIDTH], 1)
-                else:
-                    for sek in en.path:
-                        pygame.draw.rect(surf, (255, 0, 255, 240), [sek[0] * TILE_WIDTH, sek[1] * TILE_HEIGHT, TILE_WIDTH, TILE_WIDTH], 1)
-
-    pygame.display.update()
-
-
-def generate_map():
-
-    for i in range(1, len(grid) - 1):
-        for j in range(1, len(grid[i]) - 1):
-            if grid[i][j] != 0:
-                continue
-            elif (i < 3 or i > len(grid) - 4) and (j < 3 or j > len(grid[i]) - 4):
-                continue
-            if random.randint(0, 9) < 7:
-                grid[i][j] = 2
-
-    return
-
-
-def game_end_check():
-    num_alive = 0
-    for player in players:
-        if player.life:
-            num_alive += 1
-
-    if num_alive == 0:
-        global game_speed
-        global bomb_time
-        game_speed = 60
-        bomb_time = 3000*15/game_speed
-    
-    for enemy in enemy_list:
-        if enemy.life:
-            num_alive += 1
-    
-    if num_alive > 1:
-        return False
-    return True
-
-
-def main():
-    generate_map()
-    end_game = False
-    while not game_end_check() and not end_game:
-        dt = clock.tick(game_speed)
-        for en in enemy_list:
-            en.make_move(grid, bombs, explosions, ene_blocks, bomb_time, bonuses)
-
-        keys = pygame.key.get_pressed()
-        events = pygame.event.get()
-
-        for player in players:
-            if not player.life:
-                continue
-            if not isinstance(player.controls, pygame.joystick.JoystickType):
-                if keys[player.controls.down]: #moving down
-                    player.step(0, grid, ene_blocks)
-                elif keys[player.controls.right]:#moving right
-                    player.step(1, grid, ene_blocks)
-                elif keys[player.controls.up]: #moving up
-                    player.step(2, grid, ene_blocks)
-                elif keys[player.controls.left]: #moving left
-                    player.step(3, grid, ene_blocks)
-                if keys[player.controls.bomb]: #planting bomb
-                    player.plant_bomb(grid, bomb_time, bombs, bonuses)
-            else:
-                joy_id = player.controls.get_id()
-                if player.moving:
-                    player.step(grid, ene_blocks)
-
-                for e in events:
-                    if (e.type == pygame.JOYAXISMOTION) and (e.joy == joy_id):
-                        if e.value < 0: 
-                            if e.axis == 1:
-                                player.change_direction(2) #moving up
-                            elif e.axis == 0:
-                                player.change_direction(3) #moving left
-                        elif e.value > 0: 
-                            if e.axis == 1: #moving down
-                                player.change_direction(0)
-                            elif e.axis == 0: #moving right
-                                player.change_direction(1)
-                        else:
-                            player.stop()
-                    if (e.type == pygame.JOYBUTTONDOWN) and (e.joy == joy_id):
-                        if e.button == 2:
-                            player.plant_bomb(grid, bomb_time, bombs, bonuses)
-        draw()
-        for e in events:
-            if e.type == pygame.QUIT:
-                sys.exit(0)
-            elif e.type == pygame.KEYDOWN:
-                if e.key == pygame.K_ESCAPE:
-                    end_game = pause()
-                        
-        update_bombs(dt)
-    game_over()
-
-
-def update_bombs(dt):
-    for b in bombs:
-        b.update(dt)
-        if b.time < 1:
-            b.bomber.bomb_limit += 1
-            grid[b.posX][b.posY] = 0
-            exp_temp = Explosion(b.posX, b.posY, b.range)
-            exp_temp.explode(grid, bombs, b)
-            exp_temp.clear_sectors(grid, bonuses)
-            explosions.append(exp_temp)
-    for player in players:
-        if player not in enemy_list:
-            player.check_death(explosions)
-            player.check_bonus(bonuses)
-    for en in enemy_list:
-        en.check_death(explosions)
-        en.check_bonus(bonuses)
-    for e in explosions:
-        e.update(dt)
-        if e.time < 1:
-            explosions.remove(e)
-
-
-def game_over():
-
-    while True:
-        dt = clock.tick(15)
-        update_bombs(dt)
-        count = 0
-        winner = ""
-        for en in enemy_list:
-            en.make_move(grid, bombs, explosions, ene_blocks, bomb_time, bonuses)
-            if en.life:
-                count += 1
-                winner = en.algorithm.name
-        for player in players:
+        for player in self.players:
             if player.life:
-                count += 1
-                winner = player.name
-        if count > 1:
-            draw()
-            textsurface = font.render("Game ended prematurely", False, (0, 0, 0))
-            font_w = textsurface.get_width()
-            font_h = textsurface.get_height()
-            surf.blit(textsurface, (surf.get_width() // 2 - font_w//2,  surf.get_height() // 2 - font_h//2))
-            pygame.display.update()
-            time.sleep(2)
-            break
-        if count == 1:
-            draw()
-            textsurface = font.render(winner + " wins", False, (0, 0, 0))
-            font_w = textsurface.get_width()
-            font_h = textsurface.get_height()
-            surf.blit(textsurface, (surf.get_width() // 2 - font_w//2,  surf.get_height() // 2 - font_h//2))
-            pygame.display.update()
-            time.sleep(2)
-            break
-        if count == 0:
-            draw()
-            textsurface = font.render("Draw", False, (0, 0, 0))
-            font_w = textsurface.get_width()
-            font_h = textsurface.get_height()
-            surf.blit(textsurface, (surf.get_width() // 2 - font_w//2, surf.get_height() // 2 - font_h//2))
-            pygame.display.update()
-            time.sleep(2)
-            break
-        draw()
+                self.surf.blit(player.animation[player.direction][player.frame],
+                    (player.posX * (cfg.TILE_SIZE / 4), player.posY * (cfg.TILE_SIZE / 4), cfg.TILE_SIZE, cfg.TILE_SIZE))
+        for en in self.enemy_list:
+            if en.life:
+                self.surf.blit(en.animation[en.direction][en.frame],
+                    (en.posX * (cfg.TILE_SIZE / 4), en.posY * (cfg.TILE_SIZE / 4), cfg.TILE_SIZE, cfg.TILE_SIZE))
+                if self.show_path:
+                    if en.algorithm == Algorithm.DFS:
+                        for sek in en.path:
+                            pygame.draw.rect(self.surf, (255, 0, 0, 240), [sek[0] * cfg.TILE_SIZE, sek[1] * cfg.TILE_SIZE, cfg.TILE_SIZE, cfg.TILE_SIZE], 1)
+                    else:
+                        for sek in en.path:
+                            pygame.draw.rect(self.surf, (255, 0, 255, 240), [sek[0] * cfg.TILE_SIZE, sek[1] * cfg.TILE_SIZE, cfg.TILE_SIZE, cfg.TILE_SIZE], 1)
 
-        for e in pygame.event.get():
-            if e.type == pygame.QUIT:
-                sys.exit(0)
-    explosions.clear()
-    enemy_list.clear()
-    ene_blocks.clear()
-    players.clear()
-    bombs.clear()
+        pygame.display.update()
 
 
-def pause():
-    stay_pause = True
-    end_game = False
-    
-    textsurface = font.render("Pause", False, (0, 0, 0))
-    font_w = textsurface.get_width()
-    font_h = textsurface.get_height()
-    surf.blit(textsurface, (surf.get_width() // 2 - font_w//2, surf.get_height() // 2 - font_h//2))
-    pygame.display.update()
-    
+    def generate_map(self):
 
-    while stay_pause:
-        for e in pygame.event.get():
-            if e.type == pygame.QUIT:
-                sys.exit(0)
-            elif e.type == pygame.KEYDOWN:
-                if e.key == pygame.K_ESCAPE:
-                    stay_pause = False
-                if e.key == pygame.K_RETURN:
-                    end_game = True
-                    stay_pause = False
-    draw()
-    return end_game
+        for i in range(1, len(self.grid) - 1):
+            for j in range(1, len(self.grid[i]) - 1):
+                if self.grid[i][j] != 0:
+                    continue
+                elif (i < 3 or i > len(self.grid) - 4) and (j < 3 or j > len(self.grid[i]) - 4):
+                    continue
+                if random.randint(0, 9) < 7:
+                    self.grid[i][j] = 2
+
+        return
+
+
+    def game_end_check(self):
+        num_alive = 0
+        for player in self.players:
+            if player.life:
+                num_alive += 1
+
+        if num_alive == 0:
+            self.game_speed = cfg.GAME_SPEED_AI_ONLY
+            self.bomb_time = cfg.BOMB_TIME*cfg.GAME_SPEED/self.game_speed
+        
+        for enemy in self.enemy_list:
+            if enemy.life:
+                num_alive += 1
+        
+        if num_alive > 1:
+            return False
+        return True
+
+
+    def main(self):
+        self.generate_map()
+        end_game = False
+        while not self.game_end_check() and not end_game:
+            dt = self.clock.tick(self.game_speed)
+            for en in self.enemy_list:
+                en.make_move(self.grid, self.bombs, self.explosions, self.ene_blocks, self.bomb_time, self.bonuses)
+
+            keys = pygame.key.get_pressed()
+            events = pygame.event.get()
+
+            for player in self.players:
+                if not player.life:
+                    continue
+                if not isinstance(player.controls, pygame.joystick.JoystickType):
+                    if keys[player.controls.down]: #moving down
+                        player.step(0, self.grid, self.ene_blocks)
+                    elif keys[player.controls.right]:#moving right
+                        player.step(1, self.grid, self.ene_blocks)
+                    elif keys[player.controls.up]: #moving up
+                        player.step(2, self.grid, self.ene_blocks)
+                    elif keys[player.controls.left]: #moving left
+                        player.step(3, self.grid, self.ene_blocks)
+                    if keys[player.controls.bomb]: #planting bomb
+                        player.plant_bomb(self.grid, self.bomb_time, self.bombs, self.bonuses)
+                else:
+                    joy_id = player.controls.get_id()
+                    if player.moving:
+                        player.step(self.grid, self.ene_blocks)
+
+                    for e in events:
+                        if (e.type == pygame.JOYAXISMOTION) and (e.joy == joy_id):
+                            if e.value < 0: 
+                                if e.axis == 1:
+                                    player.change_direction(2) #moving up
+                                elif e.axis == 0:
+                                    player.change_direction(3) #moving left
+                            elif e.value > 0: 
+                                if e.axis == 1: #moving down
+                                    player.change_direction(0)
+                                elif e.axis == 0: #moving right
+                                    player.change_direction(1)
+                            else:
+                                player.stop()
+                        if (e.type == pygame.JOYBUTTONDOWN) and (e.joy == joy_id):
+                            if e.button == 2:
+                                player.plant_bomb(self.grid, self.bomb_time, self.bombs, self.bonuses)
+            self.draw()
+            for e in events:
+                if e.type == pygame.QUIT:
+                    sys.exit(0)
+                elif e.type == pygame.KEYDOWN:
+                    if e.key == pygame.K_ESCAPE:
+                        end_game = pause()
+                            
+            self.update_bombs(dt)
+        self.game_over()
+
+
+    def update_bombs(self, dt):
+        for b in self.bombs:
+            b.update(dt)
+            if b.time < 1:
+                b.bomber.bomb_limit += 1
+                self.grid[b.posX][b.posY] = 0
+                exp_temp = Explosion(b.posX, b.posY, b.range)
+                exp_temp.explode(self.grid, self.bombs, b)
+                exp_temp.clear_sectors(self.grid, self.bonuses)
+                self.explosions.append(exp_temp)
+        for player in self.players:
+            if player not in self.enemy_list:
+                player.check_death(self.explosions)
+                player.check_bonus(self.bonuses)
+        for en in self.enemy_list:
+            en.check_death(self.explosions)
+            en.check_bonus(self.bonuses)
+        for e in self.explosions:
+            e.update(dt)
+            if e.time < 1:
+                self.explosions.remove(e)
+
+
+    def game_over(self):
+
+        while True:
+            dt = self.clock.tick(15)
+            self.update_bombs(dt)
+            count = 0
+            winner = ""
+            for en in self.enemy_list:
+                en.make_move(self.grid, self.bombs, self.explosions, self.ene_blocks, self.bomb_time, self.bonuses)
+                if en.life:
+                    count += 1
+                    winner = en.algorithm.name
+            for player in self.players:
+                if player.life:
+                    count += 1
+                    winner = player.name
+            if count > 1:
+                self.draw()
+                textsurface = self.font.render("Game ended prematurely", False, (0, 0, 0))
+                font_w = textsurface.get_width()
+                font_h = textsurface.get_height()
+                self.surf.blit(self.textsurface, (self.surf.get_width() // 2 - font_w//2,  self.surf.get_height() // 2 - font_h//2))
+                pygame.display.update()
+                time.sleep(2)
+                break
+            if count == 1:
+                self.draw()
+                textsurface = self.font.render(winner + " wins", False, (0, 0, 0))
+                font_w = textsurface.get_width()
+                font_h = textsurface.get_height()
+                self.surf.blit(textsurface, (self.surf.get_width() // 2 - font_w//2,  self.surf.get_height() // 2 - font_h//2))
+                pygame.display.update()
+                time.sleep(2)
+                break
+            if count == 0:
+                self.draw()
+                textsurface = self.font.render("Draw", False, (0, 0, 0))
+                font_w = textsurface.get_width()
+                font_h = textsurface.get_height()
+                self.surf.blit(textsurface, (self.surf.get_width() // 2 - font_w//2, self.surf.get_height() // 2 - font_h//2))
+                pygame.display.update()
+                time.sleep(2)
+                break
+            self.draw()
+
+            for e in pygame.event.get():
+                if e.type == pygame.QUIT:
+                    sys.exit(0)
+        self.explosions.clear()
+        self.enemy_list.clear()
+        self.ene_blocks.clear()
+        self.players.clear()
+        self.bombs.clear()
+
+
+    def pause(self):
+        stay_pause = True
+        end_game = False
+        
+        textsurface = self.font.render("Pause", False, (0, 0, 0))
+        font_w = textsurface.get_width()
+        font_h = textsurface.get_height()
+        self.surf.blit(textsurface, (self.surf.get_width() // 2 - font_w//2, surf.get_height() // 2 - font_h//2))
+        pygame.display.update()
+        
+
+        while stay_pause:
+            for e in pygame.event.get():
+                if e.type == pygame.QUIT:
+                    sys.exit(0)
+                elif e.type == pygame.KEYDOWN:
+                    if e.key == pygame.K_ESCAPE:
+                        stay_pause = False
+                    if e.key == pygame.K_RETURN:
+                        end_game = True
+                        stay_pause = False
+        self.draw()
+        return end_game
