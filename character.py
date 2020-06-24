@@ -14,10 +14,16 @@ class Character:
 
     def plant_bomb(self, map, time, bombs, bonuses):
         if self.bomb_limit > 0:
+            bomb_posX = round(self.posX/4)
+            bomb_posY = round(self.posY/4)
+            for bomb in bombs:
+                if bomb.posX == bomb_posX and bomb.posY == bomb_posY:
+                    return False
             bomb = Bomb(self.bomb_range, round(self.posX/4), round(self.posY/4), map, self, time, bonuses)
             self.bomb_limit -= 1
             bombs.append(bomb)
             map[bomb.posX][bomb.posY] = 3
+            return True
 
     def check_death(self, exp):
         for e in exp:

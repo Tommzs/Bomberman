@@ -2,33 +2,29 @@ from random import choice
 from bonus import Bonus
 
 class Explosion:
-
-    bomber = None
-
-    def __init__(self, x, y, r):
+    def __init__(self, x, y, bonuses):
         self.sourceX = x
         self.sourceY = y
-        self.range = r
         self.time = 300
         self.frame = 0
-        self.sectors = []
+        self.bonuses = bonuses
+        self.sectors = set()
 
-    def explode(self, map, bombs, b):
-
-        self.bomber = b.bomber
-        self.sectors.extend(b.sectors)
+    def explode(self, grid, bombs, b):
+        self.sectors.update(set(map(tuple, b.get_range(grid, self.bonuses))))
         bombs.remove(b)
-        self.bomb_chain(bombs, map)
-
-    def bomb_chain(self, bombs, map):
-
-        for s in self.sectors:
+        sectors_to_check = list(self.sectors)
+        checked_sectors = []
+        while sectors_to_check:
+            curr_sector = sectors_to_check.pop()
+            checked_sectors.append(curr_sector)
             for x in bombs:
-                if x.posX == s[0] and x.posY == s[1]:
-
-                    map[x.posX][x.posY] = 0
+                if x.posX == curr_sector[0] and x.posY == curr_sector[1]:
+                    grid[x.posX][x.posY] = 0
                     x.bomber.bomb_limit += 1
-                    self.explode(map, bombs, x)
+                    bombs.remove(x)
+                    self.sectors.update(set(map(tuple, x.get_range(grid, self.bonuses))))
+                    sectors_to_check = [sector for sector in list(self.sectors) if sector not in checked_sectors]
 
     def clear_sectors(self, map, bonuses):
 

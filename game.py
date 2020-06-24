@@ -3,6 +3,7 @@ import sys
 import random
 import time
 import cfg
+import copy
 from player import Player
 from explosion import Explosion
 from enemy import Enemy
@@ -23,7 +24,7 @@ class Game:
         self.bombs = []
         self.explosions = []
         self.bonuses = []
-        self.grid = cfg.GRID
+        self.grid = copy.deepcopy(cfg.GRID)
         self.grass_img = None
         self.block_img = None
         self.box_img = None
@@ -45,7 +46,7 @@ class Game:
 
     def game_init(self, path, players_alg, scale, controls):
         self.player_controls = controls
-
+        self.grid = copy.deepcopy(cfg.GRID)
         cfg.TILE_SIZE = scale
         cfg.TILE_SIZE = scale
 
@@ -152,8 +153,6 @@ class Game:
                 if random.randint(0, 9) < 7:
                     self.grid[i][j] = 2
 
-        return
-
 
     def game_end_check(self):
         num_alive = 0
@@ -227,7 +226,7 @@ class Game:
                     sys.exit(0)
                 elif e.type == pygame.KEYDOWN:
                     if e.key == pygame.K_ESCAPE:
-                        end_game = pause()
+                        end_game = self.pause()
                             
             self.update_bombs(dt)
         self.game_over()
@@ -239,7 +238,7 @@ class Game:
             if b.time < 1:
                 b.bomber.bomb_limit += 1
                 self.grid[b.posX][b.posY] = 0
-                exp_temp = Explosion(b.posX, b.posY, b.range)
+                exp_temp = Explosion(b.posX, b.posY, self.bonuses)
                 exp_temp.explode(self.grid, self.bombs, b)
                 exp_temp.clear_sectors(self.grid, self.bonuses)
                 self.explosions.append(exp_temp)
@@ -277,7 +276,7 @@ class Game:
                 textsurface = self.font.render("Game ended prematurely", False, (0, 0, 0))
                 font_w = textsurface.get_width()
                 font_h = textsurface.get_height()
-                self.surf.blit(self.textsurface, (self.surf.get_width() // 2 - font_w//2,  self.surf.get_height() // 2 - font_h//2))
+                self.surf.blit(textsurface, (self.surf.get_width() // 2 - font_w//2,  self.surf.get_height() // 2 - font_h//2))
                 pygame.display.update()
                 time.sleep(2)
                 break
@@ -318,7 +317,7 @@ class Game:
         textsurface = self.font.render("Pause", False, (0, 0, 0))
         font_w = textsurface.get_width()
         font_h = textsurface.get_height()
-        self.surf.blit(textsurface, (self.surf.get_width() // 2 - font_w//2, surf.get_height() // 2 - font_h//2))
+        self.surf.blit(textsurface, (self.surf.get_width() // 2 - font_w//2, self.surf.get_height() // 2 - font_h//2))
         pygame.display.update()
         
 

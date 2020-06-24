@@ -15,7 +15,7 @@ class Enemy(Character):
         self.plant = False
         self.algorithm = alg
 
-    def move(self, map, bombs, explosions, enemy):
+    def move(self, map, bombs, explosions, enemy, bonuses):
         if self.direction == 0:
             self.posY += 1
         elif self.direction == 1:
@@ -29,7 +29,7 @@ class Enemy(Character):
             self.movement_path.pop(0)
             self.path.pop(0)
             if len(self.path) > 1:
-                grid = self.create_grid(map, bombs, explosions, enemy)
+                grid = self.create_grid(map, bombs, explosions, enemy, bonuses)
                 next = self.path[1]
                 if grid[next[0]][next[1]] > 1:
                     self.movement_path.clear()
@@ -46,16 +46,17 @@ class Enemy(Character):
             return
         if len(self.movement_path) == 0:
             if self.plant:
-                self.plant_bomb(map, bomb_time, bombs, bonuses)
-                self.plant = False
+                bomb_planted = self.plant_bomb(map, bomb_time, bombs, bonuses)
+                if bomb_planted:
+                    self.plant = False
             if self.algorithm is Algorithm.DFS:
-                self.dfs(self.create_grid(map, bombs, explosions, enemy))
+                self.dfs(self.create_grid(map, bombs, explosions, enemy, bonuses))
             else:
                 self.dijkstra(self.create_grid_dijkstra(map, bombs, explosions, enemy, bonuses))
 
         else:
             self.direction = self.movement_path[0]
-            self.move(map, bombs, explosions, enemy)
+            self.move(map, bombs, explosions, enemy, bonuses)
 
     def dfs(self, grid):
 
@@ -191,7 +192,7 @@ class Enemy(Character):
             current = next_node
 
 
-    def create_grid(self, map, bombs, explosions, enemys):
+    def create_grid(self, map, bombs, explosions, enemys, bonuses):
         grid = [[0] * len(map) for r in range(len(map))]
 
         # 0 - safe
@@ -200,7 +201,7 @@ class Enemy(Character):
         # 3 - unreachable
 
         for b in bombs:
-            for x in b.sectors:
+            for x in b.get_range(map, bonuses):
                 grid[x[0]][x[1]] = 1
             grid[b.posX][b.posY] = 3
 
@@ -244,7 +245,7 @@ class Enemy(Character):
                     grid[i][j] = Node(i, j, False, 999, 2)
 
         for b in bombs:
-            for x in b.sectors:
+            for x in b.get_range(map, bonuses):
                 grid[x[0]][x[1]].weight = 5
                 grid[x[0]][x[1]].value = 3
             grid[b.posX][b.posY].reach = False
