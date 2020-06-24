@@ -322,6 +322,7 @@ class Game:
         
 
         while stay_pause:
+            self.clock.tick(self.game_speed)
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
                     sys.exit(0)

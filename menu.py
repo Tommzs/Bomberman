@@ -94,12 +94,12 @@ class Menu:
         player_options = pygame_menu.Menu(theme=menu_theme,
             height=int(cfg.WINDOW_SIZE[1] * 0.7),
             width=int(cfg.WINDOW_SIZE[0] * 0.7),
-            title='Options'
+            title='Player options'
         )
         control_options = pygame_menu.Menu(theme=menu_theme,
             height=int(cfg.WINDOW_SIZE[1] * 0.7),
             width=int(cfg.WINDOW_SIZE[0] * 0.7),
-            title='Options'
+            title='Controls'
         )
         play_options.add_button('Characters', player_options)
         play_options.add_button('Controls', control_options)
@@ -113,7 +113,7 @@ class Menu:
                                                 ("DIJKSTRA", Algorithm.DFS, 2), ("None", Algorithm.NONE, 2)], onchange=self.change_player)
         player_options.add_selector("Character 3", [("DFS", Algorithm.DFS, 3),
                                                 ("DIJKSTRA", Algorithm.DIJKSTRA, 3), ("None", Algorithm.NONE, 3)], onchange=self.change_player)
-        player_options.add_selector("Show path", [("Yes", True), ("No", False)], onchange=self.change_path)
+        player_options.add_selector("Show AI path", [("No", False), ("Yes", True)], onchange=self.change_path)
         player_options.add_button('Back', pygame_menu.events.BACK)
 
         control_options.add_selector("Player 1", self.control_list_select1, onchange=self.change_controls_player1)

@@ -9,8 +9,8 @@ class Character:
         self.direction = 0
         self.frame = 0
         self.animation = []
-        self.bomb_range = 3
-        self.bomb_limit = 5
+        self.bomb_range = 2
+        self.bomb_limit = 1
 
     def plant_bomb(self, map, time, bombs, bonuses):
         if self.bomb_limit > 0:
