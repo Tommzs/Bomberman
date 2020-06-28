@@ -10,15 +10,11 @@ Game allow to play against two types of AI (Dijkstra Algorithm and Depth-first s
  
 ## Controls
 
-KEY1:
-Arrows - move 
-Right Control - plant bomb 
- 
-KEY2:
-WSAD - move 
-Left Control - plant bomb
+KEY1: Arrows - move; Right Control - plant bomb 
 
-Game also supports up to 2 gamepads.
+KEY2: WSAD - move; Left Control - plant bomb
+
+This game also supports up to 2 gamepads.
 
 ![](images/control_options.png)
 
@@ -28,6 +24,7 @@ Pygame and pygame-menu packages are required:
 
 `` 
 python3 -m pip install -U pygame --user
+
 python3 -m pip install -U pygame-menu --user
 `` 
 
