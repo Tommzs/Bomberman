@@ -10,7 +10,7 @@ MENU_BACKGROUND_COLOR = (102, 102, 153)
 MENU_TITLE_COLOR = (51, 51, 255)
 
 #Window config
-WINDOW_SIZE_PERC = 0.9
+WINDOW_SIZE_PERC = 0.4
 TILES_NUM = 13
 pygame.display.init()
 INFO = pygame.display.Info()

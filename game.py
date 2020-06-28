@@ -69,11 +69,11 @@ class Game:
         for i, alg in enumerate(players_alg):
             if alg is Algorithm.PLAYER:
                 self.players.append(Player(player_pos[i], self.player_controls[i], f"Player {i+1}"))
-                self.players[-1].load_animations(scale)
+                self.players[-1].load_animations(scale, (len(self.players) > 0))
                 self.ene_blocks.append(self.players[-1])
             elif alg is not Algorithm.NONE:
                 en1 = Enemy(player_pos[i], alg)
-                en1.load_animations('1', scale)
+                en1.load_animations(i, scale)
                 self.enemy_list.append(en1)
                 self.ene_blocks.append(en1)
 
