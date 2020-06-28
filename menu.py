@@ -17,14 +17,14 @@ class Menu:
         self.control_list_select1 = [("Key1", 0)]
         self.control_list_select2 = [("Key2", 1)]
         pygame.joystick.init()
-        num_of_gamepads = pygame.joystick.get_count()
+        self.num_of_gamepads = pygame.joystick.get_count()
 
         self.controllers = [
             Controls(pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RCTRL),
             Controls(pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_LCTRL)
             ]
 
-        for i in range(num_of_gamepads):
+        for i in range(self.num_of_gamepads):
             gamepad = pygame.joystick.Joystick(i)
             gamepad.init()
             self.controllers.append(gamepad)
@@ -71,6 +71,8 @@ class Menu:
             selection_color=cfg.COLOR_WHITE,
             widget_font=pygame_menu.font.FONT_BEBAS,
             title_font_size=int(cfg.TILE_SIZE*0.8),
+            title_font_color=cfg.COLOR_BLACK,
+            title_font=pygame_menu.font.FONT_BEBAS,
             widget_font_color=cfg.COLOR_BLACK,
             widget_font_size=int(cfg.TILE_SIZE*0.7),
             background_color=cfg.MENU_BACKGROUND_COLOR,
@@ -119,6 +121,13 @@ class Menu:
         control_options.add_selector("Player 1", self.control_list_select1, onchange=self.change_controls_player1)
         control_options.add_selector("Player 2", self.control_list_select2, onchange=self.change_controls_player2)
         control_options.add_button('Back', pygame_menu.events.BACK)
+        control_options.add_vertical_margin(50)
+        control_options.add_label("Key1: Move - Arrows, Bomb - RCtrl", font_size=int(cfg.TILE_SIZE*0.4))
+        control_options.add_label("Key2: Move - WSAD, Bomb - LCtrl", font_size=int(cfg.TILE_SIZE*0.4))
+        
+        if self.num_of_gamepads == 0:
+            control_options.add_label("You  can  also  connect  up  to  2  gamepads!", font_size=int(cfg.TILE_SIZE*0.4))
+
 
         play_menu.add_button('Start',
                             self.run_game)
@@ -130,6 +139,8 @@ class Menu:
             selection_color=cfg.COLOR_WHITE,
             widget_font=pygame_menu.font.FONT_BEBAS,
             title_font_size=cfg.TILE_SIZE,
+            title_font_color=cfg.COLOR_BLACK,
+            title_font=pygame_menu.font.FONT_BEBAS,
             widget_font_color=cfg.COLOR_BLACK,
             widget_font_size=int(cfg.TILE_SIZE*0.4),
             background_color=cfg.MENU_BACKGROUND_COLOR,
@@ -143,10 +154,15 @@ class Menu:
             onclose=pygame_menu.events.DISABLE_CLOSE,
             title='About'
         )
-        about_menu.add_label("Player_controls: ")
-        about_menu.add_label("Movement:_Arrows")
-        about_menu.add_label("Plant bomb:_Space")
-        about_menu.add_label("Author:_Michal_Sliwa")
+        about_menu.add_label("Original  author:")
+        about_menu.add_label("Michal  Sliwa (github.com/Forestf90)")
+        about_menu.add_vertical_margin(15)
+        about_menu.add_label("Extended  version  author:")
+        about_menu.add_label("Tomas  Novak (github.com/Tommzs)")
+        about_menu.add_vertical_margin(15)
+        about_menu.add_label("Improvements:")
+        about_menu.add_label("2  players,  gamepad  support,  bonuses...")
+        about_menu.add_vertical_margin(15)
         about_menu.add_label("Sprite: ")
 
         about_menu.add_label("https://opengameart.org/content")
