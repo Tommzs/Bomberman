@@ -2,7 +2,7 @@
  
 Bomberman clone written in python using pygame. 
  
-![](images/bomberman.gif)
+![](images/bomberman@half.gif)
  
 Game allow to play against two types of AI (Dijkstra Algorithm and Depth-first search) and one friend
  
@@ -24,17 +24,19 @@ Game also supports up to 2 gamepads.
 
 ## Run 
 
-To run this game you need to install pygame and pygame-menu package
+Pygame and pygame-menu packages are required:
+
 `` 
 python3 -m pip install -U pygame --user
 python3 -m pip install -U pygame-menu --user
 `` 
 
+To run the game run:
+
 `` 
 python3 launch.py 
 `` 
  
-For now game is not compatible with python2 
 ## Sprite 
  
 https://opengameart.org/content/bomb-party-the-complete-set 
@@ -44,6 +46,7 @@ https://opengameart.org/content/bomb-party-the-complete-set
 Original author: Michal Sliwa (github.com/Forestf90)
 
 Extended version author: Tomas Novak (github.com/Tommzs)
+
 Improvements:
 - support for 2 players
 - support for gamepads
