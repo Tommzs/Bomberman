@@ -8,6 +8,8 @@ from player import Player
 from explosion import Explosion
 from enemy import Enemy
 from algorithm import Algorithm
+from joystick_state import JoystickState
+
 
 class Game:
     def __init__(self):
@@ -38,6 +40,7 @@ class Game:
         self.bomb_images = []
         self.explosion_images = []
         self.bonus_images = []
+        self.joysticks = []
 
         pygame.font.init()
         self.font = pygame.font.SysFont(cfg.FONT_TYPE, cfg.FONT_SIZE)
@@ -46,6 +49,9 @@ class Game:
 
     def game_init(self, path, players_alg, scale, controls):
         self.player_controls = controls
+
+        self.joysticks = [JoystickState() for i in range(pygame.joystick.get_count())]
+
         self.grid = copy.deepcopy(cfg.GRID)
         cfg.TILE_SIZE = scale
         cfg.TILE_SIZE = scale
@@ -173,6 +179,24 @@ class Game:
         return True
 
 
+    def updateJoystickStates(self, events):
+        for e in events:
+            event_type = e.type
+            if event_type in [pygame.JOYAXISMOTION, pygame.JOYBUTTONDOWN, pygame.JOYBUTTONUP]:
+                joy_id = e.joy
+                if event_type == pygame.JOYAXISMOTION:
+                    self.joysticks[joy_id].axes[e.axis] = e.value
+                elif event_type == pygame.JOYBUTTONDOWN:
+                    self.joysticks[joy_id].buttons[e.button] = True
+                elif event_type == pygame.JOYBUTTONUP:
+                    self.joysticks[joy_id].buttons[e.button] = False
+
+    
+    def changeDirIfDifferent(self, direction, player):
+        if direction != player.direction:
+            player.change_direction(direction)
+
+
     def main(self):
         self.generate_map()
         end_game = False
@@ -183,6 +207,7 @@ class Game:
 
             keys = pygame.key.get_pressed()
             events = pygame.event.get()
+            self.updateJoystickStates(events)
 
             for player in self.players:
                 if not player.life:
@@ -200,26 +225,23 @@ class Game:
                         player.plant_bomb(self.grid, self.bomb_time, self.bombs, self.bonuses)
                 else:
                     joy_id = player.controls.get_id()
-                    if player.moving:
-                        player.step(self.grid, self.ene_blocks)
+                    joystick_state = self.joysticks[joy_id]
 
-                    for e in events:
-                        if (e.type == pygame.JOYAXISMOTION) and (e.joy == joy_id):
-                            if e.value < 0: 
-                                if e.axis == 1:
-                                    player.change_direction(2) #moving up
-                                elif e.axis == 0:
-                                    player.change_direction(3) #moving left
-                            elif e.value > 0: 
-                                if e.axis == 1: #moving down
-                                    player.change_direction(0)
-                                elif e.axis == 0: #moving right
-                                    player.change_direction(1)
-                            else:
-                                player.stop()
-                        if (e.type == pygame.JOYBUTTONDOWN) and (e.joy == joy_id):
-                            if e.button == 2:
-                                player.plant_bomb(self.grid, self.bomb_time, self.bombs, self.bonuses)
+                    axis0 = joystick_state.axes[0]
+                    axis1 = joystick_state.axes[1]
+                    
+                    if axis0 < 0:
+                        player.step(3, self.grid, self.ene_blocks)
+                    elif axis0 > 0:
+                        player.step(1, self.grid, self.ene_blocks)
+                    elif axis1 < 0:
+                        player.step(2, self.grid, self.ene_blocks)
+                    elif axis1 > 0:
+                        player.step(0, self.grid, self.ene_blocks)
+                            
+                    if joystick_state.buttons[2]:
+                        player.plant_bomb(self.grid, self.bomb_time, self.bombs, self.bonuses)
+
             self.draw()
             for e in events:
                 if e.type == pygame.QUIT:
